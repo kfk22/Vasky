@@ -232,6 +232,10 @@ h1.title { color: var(--brand); font-size: 40px; letter-spacing: -0.02em; margin
 .ship-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand), #6a69d8); }
 .wa-float { position: fixed; bottom: 20px; left: 20px; width: 52px; height: 52px; border-radius: 50%; background: #1faa53; color: #fff; font-size: 26px; display: flex; align-items: center; justify-content: center; z-index: 150; box-shadow: 0 10px 26px rgba(31,170,83,0.45); }
 .wa-float:hover { transform: scale(1.06); }
+.wa-float img { width: 28px; height: 28px; display: block; }
+.wa-btn { display: inline-flex !important; align-items: center; gap: 9px; }
+.wa-btn img { width: 19px; height: 19px; }
+.whish-logo { height: 20px; width: auto; vertical-align: -4px; margin-right: 2px; }
 .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .modal { background: #fff; border-radius: 14px; padding: 24px; max-width: 440px; width: 100%; }
 .crumbs { font-size: 13px; color: var(--muted); margin: 18px 0 0; }

@@ -123,7 +123,7 @@ export default function Layout({ children }) {
         aria-label="Chat on WhatsApp"
         className="wa-float"
       >
-        ✆
+        <img src="/whatsapp.svg" alt="WhatsApp" width="28" height="28" />
       </a>
     </>
   );

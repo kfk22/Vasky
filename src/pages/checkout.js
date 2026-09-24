@@ -6,6 +6,14 @@ import { formatPrice } from "../lib/format";
 import { getProduct } from "../data/products";
 import { defaultDelivery, PAYMENT_METHODS } from "../data/delivery";
 
+const WHISH_LOGO = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Logo_Whish_Money_%28Lebanon%29.png/250px-Logo_Whish_Money_%28Lebanon%29.png";
+
+function WhishMark() {
+  const [ok, setOk] = useState(true);
+  if (!ok) return <b className="whish-badge">whish</b>;
+  return <img src={WHISH_LOGO} alt="Whish" className="whish-logo" onError={() => setOk(false)} />;
+}
+
 export default function Checkout() {
   const { cart, clearCart, recordOrder, user } = useStore();
   const router = useRouter();
@@ -116,7 +124,7 @@ export default function Checkout() {
             <div key={m.id}>
               <label className={"pay" + (payment === m.id ? " sel" : "")} style={{ display: "block" }}>
                 <input type="radio" name="payment" checked={payment === m.id} onChange={() => setPayment(m.id)} />{" "}
-                {m.id === "whish" ? <b className="whish-badge">whish</b> : null} <b>{m.name}</b>
+                {m.id === "whish" ? <WhishMark /> : null} <b>{m.name}</b>
                 <p className="muted" style={{ margin: "6px 0 0 22px" }}>{m.note}</p>
               </label>
               {m.id === "whish" && payment === "whish" && (

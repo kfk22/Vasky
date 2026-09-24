@@ -35,7 +35,9 @@ export default function OrderDone({ order }) {
         )}
       </div>
       <div style={{ display: "flex", gap: 10, marginTop: 18, flexWrap: "wrap" }}>
-        <a className="btn" href={wa} target="_blank" rel="noreferrer" style={{ background: "#1faa53", borderColor: "#1faa53" }}>CONFIRM ON WHATSAPP</a>
+        <a className="btn wa-btn" href={wa} target="_blank" rel="noreferrer" style={{ background: "#1faa53", borderColor: "#1faa53" }}>
+          <img src="/whatsapp.svg" alt="" width="19" height="19" /> CONFIRM ON WHATSAPP
+        </a>
         <Link href="/shop" className="btn ghost">CONTINUE SHOPPING</Link>
       </div>
       <p className="muted" style={{ marginTop: 10 }}>Tap the green button — your order opens pre-written in WhatsApp, just press send.</p>
