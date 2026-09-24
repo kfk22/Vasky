@@ -88,9 +88,9 @@ export function Footer() {
         </div>
         <div>
           <h4>Help</h4>
-          <p>Cash on Delivery</p>
-          <p>Delivery across Lebanon</p>
-          <p>Easy size exchanges</p>
+          <Link href="/help">Delivery & returns</Link>
+          <Link href="/account">Track your order</Link>
+          <Link href="/favorites">Favorites</Link>
         </div>
       </div>
       <div className="base">© {new Date().getFullYear()} Vasky. All rights reserved.</div>
