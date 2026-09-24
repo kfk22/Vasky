@@ -5,7 +5,7 @@ let pg = null;
 let json = null;
 
 async function impl() {
-  if (process.env.DATABASE_URL) {
+  if (process.env.DATABASE_URL || process.env.POSTGRES_URL) {
     if (!pg) pg = await import("./db.pg.js");
     return pg;
   }

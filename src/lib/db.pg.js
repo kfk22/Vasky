@@ -5,9 +5,10 @@ import { Pool } from "pg";
 let pool = null;
 function db() {
   if (!pool) {
+    const cs = process.env.DATABASE_URL || process.env.POSTGRES_URL;
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: /localhost|127\.0\.0\.1/.test(process.env.DATABASE_URL || "")
+      connectionString: cs,
+      ssl: /localhost|127\.0\.0\.1/.test(cs || "")
         ? false
         : { rejectUnauthorized: false },
       max: 5,
