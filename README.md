@@ -56,6 +56,32 @@ never baked into client code.
 - Product images are lightweight inline SVGs (`src/components/ShoeArt.js`) —
   zero downloads, fast on low-end phones.
 
+## Deploy on Vercel (go live)
+
+1. Create an empty repo on GitHub, then:
+   ```bash
+   git remote add origin https://github.com/YOU/vasky.git
+   git push -u origin main   # or master — check with: git branch --show-current
+   ```
+   (If `git branch` shows no name yet, run `git branch -M main` first.)
+2. Go to **vercel.com → Add New → Project → Import** the repo. Framework
+   preset: Next.js. No build settings to change.
+3. Add a database: **Vercel → Storage → Create Postgres** (free tier is
+   plenty), or a free [Neon](https://neon.tech) database. Copy
+   `DATABASE_URL` into the project's **Environment Variables**.
+4. Add env vars: `ADMIN_TOKEN=<long random secret>`,
+   `OWNER_WHATSAPP=96181283591`. Optional later: `WHATSAPP_TOKEN`,
+   `WHATSAPP_PHONE_ID`.
+5. Deploy. Then migrate your local orders/stock once:
+   ```powershell
+   $env:DATABASE_URL="postgres://..."
+   node scripts/migrate-to-pg.mjs
+   ```
+6. Open `your-site.vercel.app/admin` and verify the migrated order is there.
+
+Without `DATABASE_URL` the app runs on local JSON files (fine for dev).
+With it, Postgres is used automatically — no code changes needed.
+
 ## Structure
 
 ```
