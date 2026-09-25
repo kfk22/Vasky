@@ -79,6 +79,18 @@ export function getPromos() {
   return loadJson("promos.json", null);
 }
 
+// ---- generic settings (admin password hash, etc.) ----
+export function getSetting(key) {
+  return loadJson("settings.json", {})[key] ?? null;
+}
+
+export function setSetting(key, value) {
+  const s = loadJson("settings.json", {});
+  s[key] = value;
+  saveJson("settings.json", s);
+  return value;
+}
+
 // ---- reviews ----
 export function getReviews() {
   return loadJson("reviews.json", []);

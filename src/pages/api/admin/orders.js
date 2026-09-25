@@ -1,13 +1,9 @@
 import { getOrders, setOrderStatus } from "../../../lib/db";
+import { verifyAdmin } from "../../../lib/admin-auth";
 import { ORDER_STATUSES } from "../../../data/delivery";
 
-function authed(req) {
-  const token = req.headers["x-admin-token"];
-  return token && token === (process.env.ADMIN_TOKEN || "vasky-admin-dev");
-}
-
 export default async function handler(req, res) {
-  if (!authed(req)) return res.status(401).json({ error: "Unauthorized." });
+  if (!(await verifyAdmin(req))) return res.status(401).json({ error: "Unauthorized." });
   if (req.method === "GET") {
     return res.status(200).json({ orders: await getOrders(), statuses: ORDER_STATUSES });
   }

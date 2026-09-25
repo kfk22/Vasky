@@ -64,6 +64,16 @@ export async function setOverrides(next) { await kvSet("product-overrides", next
 export async function getDelivery() { return kvGet("delivery", null); }
 export async function setDelivery(cfg) { await kvSet("delivery", cfg); return cfg; }
 export async function getPromos() { return kvGet("promos", null); }
+export async function getSetting(key) {
+  const s = await kvGet("settings", {});
+  return (s || {})[key] ?? null;
+}
+export async function setSetting(key, value) {
+  const s = (await kvGet("settings", {})) || {};
+  s[key] = value;
+  await kvSet("settings", s);
+  return value;
+}
 export async function getReviews() {
   await init();
   const r = await db().query("SELECT data FROM reviews ORDER BY created_at DESC LIMIT 1000");

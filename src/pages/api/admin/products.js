@@ -1,13 +1,9 @@
 import { catalog } from "../../../lib/server-products";
 import { getOverrides, setOverrides } from "../../../lib/db";
-
-function authed(req) {
-  const token = req.headers["x-admin-token"];
-  return token && token === (process.env.ADMIN_TOKEN || "vasky-admin-dev");
-}
+import { verifyAdmin } from "../../../lib/admin-auth";
 
 export default async function handler(req, res) {
-  if (!authed(req)) return res.status(401).json({ error: "Unauthorized." });
+  if (!(await verifyAdmin(req))) return res.status(401).json({ error: "Unauthorized." });
   if (req.method === "GET") return res.status(200).json({ products: await catalog() });
 
   if (req.method === "PATCH" || req.method === "POST") {

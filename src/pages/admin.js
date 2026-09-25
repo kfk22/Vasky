@@ -13,6 +13,22 @@ export default function Admin() {
   const [open, setOpen] = useState(null);
   const [edit, setEdit] = useState({});
   const [newArea, setNewArea] = useState({ id: "", name: "", fee: 5 });
+  const [pwCur, setPwCur] = useState("");
+  const [pwNext, setPwNext] = useState("");
+
+  async function changePw(e) {
+    e.preventDefault();
+    const r = await fetch("/api/admin/password", {
+      method: "POST",
+      headers: headers(token),
+      body: JSON.stringify({ current: pwCur, next: pwNext }),
+    });
+    const d = await r.json();
+    if (!r.ok) { setMsg(d.error || "Failed"); return; }
+    sessionStorage.setItem("vasky-admin", pwNext);
+    setToken(pwNext); setPwCur(""); setPwNext("");
+    setMsg("Password changed. Use the new one from now on.");
+  }
 
   useEffect(() => { setToken(sessionStorage.getItem("vasky-admin") || ""); }, []);
 
@@ -102,7 +118,7 @@ export default function Admin() {
   return (
     <div className="wrap admin-grid" style={{ maxWidth: 1160 }}>
       <nav className="admin-nav">
-        {[["orders", "Orders"], ["products", "Products"], ["delivery", "Delivery"], ["customers", "Customers"]].map(([v, l]) => (
+        {[["orders", "Orders"], ["products", "Products"], ["delivery", "Delivery"], ["customers", "Customers"], ["password", "Password"]].map(([v, l]) => (
           <button key={v} className={tab === v ? "sel" : ""} onClick={() => setTab(v)}>{l}</button>
         ))}
         <button onClick={() => { sessionStorage.removeItem("vasky-admin"); location.reload(); }}>Logout</button>
@@ -192,6 +208,17 @@ export default function Admin() {
               <button className="btn" onClick={() => { if (newArea.id && newArea.name) { setDelivery({ ...delivery, areas: [...delivery.areas, newArea] }); setNewArea({ id: "", name: "", fee: 5 }); } }}>ADD</button>
             </div>
             <button className="btn" onClick={saveDelivery}>SAVE DELIVERY</button>
+          </>
+        )}
+        {tab === "password" && (
+          <>
+            <h2 style={{ color: "var(--brand)" }}>Change password</h2>
+            <p className="muted">Works right here on the website — no Vercel needed. 8+ characters.</p>
+            <form onSubmit={changePw} style={{ display: "grid", gap: 10, maxWidth: 360 }}>
+              <input type="password" value={pwCur} onChange={(e) => setPwCur(e.target.value)} placeholder="Current password" aria-label="Current password" style={{ border: "1px solid var(--line)", borderRadius: 8, padding: 10 }} />
+              <input type="password" value={pwNext} onChange={(e) => setPwNext(e.target.value)} placeholder="New password" aria-label="New password" style={{ border: "1px solid var(--line)", borderRadius: 8, padding: 10 }} />
+              <button className="btn">CHANGE PASSWORD</button>
+            </form>
           </>
         )}
         {tab === "customers" && (
