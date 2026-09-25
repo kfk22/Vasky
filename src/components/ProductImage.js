@@ -5,7 +5,7 @@ import ShoeArt from "./ShoeArt";
 export default function ProductImage({ product, crop, eager }) {
   const [failed, setFailed] = useState(false);
   if (failed || !product.img) return <ShoeArt art={product.art} name={product.name} />;
-  const src = crop ? product.img + "&crop=" + crop : product.img;
+  const src = crop && /^https?:/.test(product.img) ? product.img + "&crop=" + crop : product.img;
   return (
     <img
       src={src}

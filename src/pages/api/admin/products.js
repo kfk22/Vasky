@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (req.method === "GET") return res.status(200).json({ products: await catalog() });
 
   if (req.method === "POST") {
-    // Create a new product: { product: { name, brand, price, category, sizes, description, ... } }
+    // Create a new product: { product: { name, brand, price, category, sizes, description, img? } }
     const { product } = req.body || {};
     if (!product || typeof product.name !== "string" || !product.name.trim()) return res.status(400).json({ error: "Name required." });
     const price = Number(product.price);
@@ -32,6 +32,9 @@ export default async function handler(req, res) {
       keywords: product.name, stock, rating: 5, reviews: 0,
       art: { style: "court", c1: "#e8e8f2", c2: "#2E2D88" },
     };
+    if (typeof product.img === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(product.img) && product.img.length <= 700000) {
+      over[id].img = product.img;
+    }
     await setOverrides(over);
     return res.status(201).json({ id, slug });
   }
@@ -55,6 +58,9 @@ export default async function handler(req, res) {
     const cur = over[id] || {};
     const next = { ...over, [id]: { ...cur, ...clean } };
     if (patch.stock) next[id].stock = { ...(cur.stock || {}), ...patch.stock };
+    if (typeof patch.img === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(patch.img) && patch.img.length <= 700000) {
+      next[id].img = patch.img;
+    }
     await setOverrides(next);
     return res.status(200).json({ ok: true });
   }

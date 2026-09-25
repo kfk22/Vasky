@@ -19,6 +19,7 @@ export default function Admin() {
   const [newPromo, setNewPromo] = useState({ code: "", type: "percent", value: 10 });
   const [reviews, setReviews] = useState([]);
   const [np, setNp] = useState({ name: "", brand: "Vasky", price: "", category: "men", sizes: "", description: "" });
+  const [npImg, setNpImg] = useState("");
 
   function beep() {
     try {
@@ -146,10 +147,11 @@ export default function Admin() {
 
   async function addProduct(e) {
     e.preventDefault();
-    const r = await fetch("/api/admin/products", { method: "POST", headers: headers(token), body: JSON.stringify({ product: { ...np, price: Number(np.price) } }) });
+    const r = await fetch("/api/admin/products", { method: "POST", headers: headers(token), body: JSON.stringify({ product: { ...np, price: Number(np.price), img: npImg || undefined } }) });
     const d = await r.json();
     if (!r.ok) { setMsg(d.error || "Failed"); return; }
     setNp({ name: "", brand: "Vasky", price: "", category: "men", sizes: "", description: "" });
+    setNpImg("");
     setMsg("Product added!");
     load();
   }
@@ -165,6 +167,34 @@ export default function Admin() {
   async function delReview(id) {
     await fetch("/api/reviews?id=" + encodeURIComponent(id), { method: "DELETE", headers: headers(token) });
     setReviews((r) => r.filter((x) => x.id !== id));
+  }
+
+  function fileToPhoto(file) {
+    return new Promise((resolve, reject) => {
+      if (!file || !file.type.startsWith("image/")) return reject(new Error("Not an image"));
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const sc = Math.min(1, 1000 / Math.max(img.width, img.height));
+        const cv = document.createElement("canvas");
+        cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(url);
+        resolve(cv.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = () => reject(new Error("Bad image"));
+      img.src = url;
+    });
+  }
+
+  async function uploadImg(id, file) {
+    try {
+      const img = await fileToPhoto(file);
+      if (img.length > 700000) { setMsg("Photo too big after compression."); return; }
+      await fetch("/api/admin/products", { method: "PATCH", headers: headers(token), body: JSON.stringify({ id, patch: { img } }) });
+      setMsg("Photo saved!");
+      load();
+    } catch { setMsg("Couldn't read that photo."); }
   }
 
   async function saveDelivery() {
@@ -272,7 +302,9 @@ export default function Admin() {
                     <td><input value={edit[p.id]?.price ?? p.price} onChange={(e) => setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], price: e.target.value } }))} style={{ width: 70 }} /></td>
                     <td><input placeholder={p.oldPrice ? String(Math.round((1 - p.price / p.oldPrice) * 100)) : "0"} value={edit[p.id]?.discount ?? ""} onChange={(e) => setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], discount: e.target.value } }))} style={{ width: 60 }} /></td>
                     <td><input value={edit[p.id]?.stock ?? Object.entries(p.stock || {}).map(([s, q]) => s + ":" + q).join(", ")} onChange={(e) => setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], stock: e.target.value } }))} style={{ width: 200 }} /></td>
-                    <td style={{ whiteSpace: "nowrap" }}><button className="btn" onClick={() => saveProduct(p.id)}>SAVE</button> <button className="btn ghost" onClick={() => delProduct(p.id, p.name)}>✕</button></td>
+                    <td style={{ whiteSpace: "nowrap" }}><button className="btn" onClick={() => saveProduct(p.id)}>SAVE</button> <button className="btn ghost" onClick={() => delProduct(p.id, p.name)}>✕</button><br />
+                      <label className="btn ghost" style={{ marginTop: 4, display: "inline-block" }}>{p.img && !p.img.startsWith("https://images.unsplash.com") ? "📷✓" : "📷"}<input type="file" accept="image/*" hidden onChange={(e) => { if (e.target.files[0]) uploadImg(p.id, e.target.files[0]); e.target.value = ""; }} /></label>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -287,6 +319,7 @@ export default function Admin() {
               </select>
               <input placeholder="Sizes: 40, 41, 42" value={np.sizes} onChange={(e) => setNp({ ...np, sizes: e.target.value })} style={{ gridColumn: "1 / -1" }} />
               <input placeholder="Description" value={np.description} onChange={(e) => setNp({ ...np, description: e.target.value })} style={{ gridColumn: "1 / -1" }} />
+              <label className="btn ghost" style={{ gridColumn: "1 / -1", textAlign: "center" }}>{npImg ? "📷 Photo ready ✓ (tap to change)" : "📷 Add photo"}<input type="file" accept="image/*" hidden onChange={async (e) => { if (e.target.files[0]) { try { setNpImg(await fileToPhoto(e.target.files[0])); } catch { setMsg("Couldn't read that photo."); } } e.target.value = ""; }} /></label>
               <button className="btn" style={{ gridColumn: "1 / -1" }}>ADD PRODUCT</button>
             </form>
           </>
