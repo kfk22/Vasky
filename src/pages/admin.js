@@ -118,7 +118,7 @@ export default function Admin() {
         {tab === "orders" && (
           <>
             <h2 style={{ color: "var(--brand)" }}>Orders ({orders.length})</h2>
-            <table className="table">
+            <div className="table-wrap"><table className="table">
               <thead><tr><th>Number</th><th>Customer</th><th>Total</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 {orders.map((o) => (
@@ -145,7 +145,7 @@ export default function Admin() {
                   </Fragment>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </>
         )}
         {tab === "products" && (
@@ -156,7 +156,7 @@ export default function Admin() {
                 Low stock: {lowStock.slice(0, 8).map((l) => `${l.name} EU${l.size} (${l.qty})`).join(" · ")}{lowStock.length > 8 ? ` +${lowStock.length - 8} more` : ""}
               </p>
             )}
-            <table className="table">
+            <div className="table-wrap"><table className="table">
               <thead><tr><th>Product</th><th>Price</th><th>Discount %</th><th>Stock (size:qty,…)</th><th></th></tr></thead>
               <tbody>
                 {products.map((p) => (
@@ -169,7 +169,7 @@ export default function Admin() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </>
         )}
         {tab === "delivery" && delivery && (
@@ -197,14 +197,14 @@ export default function Admin() {
         {tab === "customers" && (
           <>
             <h2 style={{ color: "var(--brand)" }}>Customers ({Object.keys(customers).length})</h2>
-            <table className="table">
+            <div className="table-wrap"><table className="table">
               <thead><tr><th>Name</th><th>Contact</th><th>Orders</th><th>Spent</th></tr></thead>
               <tbody>
                 {Object.values(customers).map((c) => (
                   <tr key={c.phone}><td>{c.name}</td><td>{c.phone}<br /><span className="muted">{c.city}</span></td><td>{c.orders}</td><td>{formatPrice(c.spent)}</td></tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </>
         )}
       </section>

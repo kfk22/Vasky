@@ -110,7 +110,7 @@ export default function Shop() {
             <button className="btn" onClick={reset}>CLEAR FILTERS</button>
           </div>
         ) : (
-          <div className="grid" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>{visible.map((p) => <ProductCard key={p.id} product={p} />)}</div>
+          <div className="grid cols3">{visible.map((p) => <ProductCard key={p.id} product={p} />)}</div>
         )}
       </section>
     </div>

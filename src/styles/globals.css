@@ -111,6 +111,7 @@ button { font-family: inherit; cursor: pointer; }
 .sec-head a { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; color: var(--brand); }
 .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
 .grid.cat { grid-template-columns: repeat(3, 1fr); }
+.grid.cols3 { grid-template-columns: repeat(3, 1fr); }
 
 /* product card */
 .card { position: relative; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; overflow: hidden; transition: transform 0.15s, box-shadow 0.15s; }
@@ -269,7 +270,15 @@ h1.title { color: var(--brand); font-size: 40px; letter-spacing: -0.02em; margin
   .links, .search { display: none; }
   .burger { display: flex; }
   .mobile { display: flex; }
-  .grid, .grid.cat { grid-template-columns: repeat(2, 1fr); }
+  .grid, .grid.cat, .grid.cols3 { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .card .row { flex-direction: column; }
+  .card .row .btn { width: 100%; }
+  .card select { width: 100%; }
+  .table-wrap { overflow-x: auto; margin: 0 -4px; padding: 0 4px; }
+  .table { min-width: 620px; }
+  .sec-head { flex-wrap: wrap; }
+  .line .thumb { width: 60px; height: 60px; }
+  .hero-badges { gap: 16px; flex-wrap: wrap; }
   .reviews { grid-template-columns: 1fr; }
   .perks { grid-template-columns: 1fr 1fr; }
   .hero h1 { font-size: 40px; }
@@ -279,7 +288,9 @@ h1.title { color: var(--brand); font-size: 40px; letter-spacing: -0.02em; margin
   .sec-head h2 { font-size: 26px; }
 }
 @media (max-width: 420px) {
-  .grid, .grid.cat { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid, .grid.cat, .grid.cols3 { grid-template-columns: 1fr 1fr; gap: 10px; }
   .card .meta { padding: 10px; }
+  .card .name { font-size: 13px; }
   .hero h1 { font-size: 34px; }
+  .sec-head h2 { font-size: 22px; }
 }
