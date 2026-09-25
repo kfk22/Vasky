@@ -1,4 +1,4 @@
-import { getOrders, setOrderStatus } from "../../../lib/db";
+import { getOrders, setOrderStatus, deleteOrder } from "../../../lib/db";
 import { verifyAdmin } from "../../../lib/admin-auth";
 import { ORDER_STATUSES } from "../../../data/delivery";
 
@@ -13,6 +13,12 @@ export default async function handler(req, res) {
     const o = await setOrderStatus(number, status);
     if (!o) return res.status(404).json({ error: "Order not found." });
     return res.status(200).json({ order: o });
+  }
+  if (req.method === "DELETE") {
+    const number = req.query.number || req.body?.number;
+    if (!number) return res.status(400).json({ error: "Missing number." });
+    await deleteOrder(number);
+    return res.status(200).json({ ok: true });
   }
   return res.status(405).json({ error: "Method not allowed" });
 }

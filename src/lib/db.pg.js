@@ -89,6 +89,11 @@ export async function deleteReview(id) {
   await db().query("DELETE FROM reviews WHERE data->>'id'=$1", [id]);
   return true;
 }
+export async function deleteOrder(number) {
+  await init();
+  await db().query("DELETE FROM orders WHERE number=$1", [number]);
+  return true;
+}
 export async function setPromos(list) {
   await kvSet("promos", list);
   return list;

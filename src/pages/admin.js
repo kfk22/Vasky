@@ -114,6 +114,13 @@ export default function Admin() {
     load();
   }
 
+  async function delOrder(number) {
+    if (!window.confirm("Permanently delete order " + number + "? Stock stays deducted.")) return;
+    await fetch("/api/admin/orders?number=" + encodeURIComponent(number), { method: "DELETE", headers: headers(token) });
+    setMsg("Deleted " + number);
+    load();
+  }
+
   async function saveProduct(id) {
     const patch = {};
     if (edit[id]?.name !== undefined && edit[id].name !== "") patch.name = edit[id].name;
@@ -263,7 +270,7 @@ export default function Admin() {
                           {ORDER_STATUSES.map((s) => <option key={s}>{s}</option>)}
                         </select>
                       </td>
-                      <td><button className="btn ghost" onClick={() => setOpen(open === o.number ? null : o.number)}>{open === o.number ? "HIDE" : "VIEW"}</button></td>
+                      <td><button className="btn ghost" onClick={() => setOpen(open === o.number ? null : o.number)}>{open === o.number ? "HIDE" : "VIEW"}</button> <button className="btn ghost" onClick={() => delOrder(o.number)}>✕</button></td>
                     </tr>
                     {open === o.number && (
                       <tr><td colSpan={5}>

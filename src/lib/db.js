@@ -24,6 +24,7 @@ export async function getPromos(...a) { return (await impl()).getPromos(...a); }
 export async function getReviews(...a) { return (await impl()).getReviews(...a); }
 export async function addReview(...a) { return (await impl()).addReview(...a); }
 export async function deleteReview(...a) { return (await impl()).deleteReview(...a); }
+export async function deleteOrder(...a) { return (await impl()).deleteOrder(...a); }
 export async function setPromos(...a) { return (await impl()).setPromos(...a); }
 export async function getSetting(...a) { return (await impl()).getSetting(...a); }
 export async function setSetting(...a) { return (await impl()).setSetting(...a); }

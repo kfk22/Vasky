@@ -54,6 +54,11 @@ export function setOrderStatus(number, status) {
   return o;
 }
 
+export function deleteOrder(number) {
+  saveJson("orders.json", getOrders().filter((x) => x.number !== number));
+  return true;
+}
+
 // ---- product overrides (admin edits) ----
 export function getOverrides() {
   return loadJson("product-overrides.json", {});
