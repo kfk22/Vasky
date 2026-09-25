@@ -20,6 +20,34 @@ export default function Admin() {
   const [reviews, setReviews] = useState([]);
   const [np, setNp] = useState({ name: "", brand: "Vasky", price: "", category: "men", sizes: "", description: "" });
   const [npImg, setNpImg] = useState("");
+  const [oSearch, setOSearch] = useState("");
+  const [oFilter, setOFilter] = useState("all");
+
+  const escH = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  function exportCSV() {
+    const rows = [["number", "date", "name", "phone", "city", "area", "items", "subtotal", "discount", "delivery", "total", "payment", "status"]];
+    orders.forEach((o) => rows.push([o.number, o.createdAt, o.customer.name, o.customer.phone, o.customer.city, o.customer.area, o.items.map((i) => `${i.name} EU${i.size} x${i.qty}`).join("; "), o.subtotal, o.discount || 0, o.delivery, o.total, o.paymentName, o.status]));
+    const csv = rows.map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    a.download = "vasky-orders.csv";
+    a.click();
+  }
+
+  function printInvoice(o) {
+    const w = window.open("", "_blank", "width=640");
+    if (!w) { setMsg("Allow popups to print invoices."); return; }
+    w.document.write(`<html><head><title>Invoice ${escH(o.number)}</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin:12px 0}td,th{border:1px solid #999;padding:7px;text-align:left;font-size:13px}</style></head><body>
+      <h2 style="letter-spacing:4px">VASKY</h2>
+      <p>Order <b>${escH(o.number)}</b> · ${escH(new Date(o.createdAt).toLocaleString())} · ${escH(o.status)}</p>
+      <p>${escH(o.customer.name)} · ${escH(o.customer.phone)}<br>${escH(o.customer.address)}, ${escH(o.customer.city)}</p>
+      <table><tr><th>Item</th><th>Size</th><th>Qty</th><th>Total</th></tr>${o.items.map((i) => `<tr><td>${escH(i.name)}</td><td>${escH(i.size)}</td><td>${i.qty}</td><td>$${Number(i.total).toFixed(2)}</td></tr>`).join("")}</table>
+      <p>Subtotal $${Number(o.subtotal).toFixed(2)}${o.discount ? ` · Discount -$${Number(o.discount).toFixed(2)}` : ""} · Delivery ${o.delivery === 0 ? "Free" : "$" + Number(o.delivery).toFixed(2)}</p>
+      <h3>Total $${Number(o.total).toFixed(2)} (${escH(o.paymentName)})</h3>
+      <script>onload=()=>{print();}<\/script></body></html>`);
+    w.document.close();
+  }
 
   function beep() {
     try {
@@ -256,7 +284,7 @@ export default function Admin() {
   return (
     <div className="wrap admin-grid" style={{ maxWidth: 1160 }}>
       <nav className="admin-nav">
-        {[["orders", "Orders"], ["products", "Products"], ["delivery", "Delivery"], ["customers", "Customers"], ["promos", "Promos"], ["reviews", "Reviews"], ["password", "Password"]].map(([v, l]) => (
+        {[["orders", "Orders"], ["products", "Products"], ["reports", "Reports"], ["delivery", "Delivery"], ["customers", "Customers"], ["promos", "Promos"], ["reviews", "Reviews"], ["password", "Password"]].map(([v, l]) => (
           <button key={v} className={tab === v ? "sel" : ""} onClick={() => setTab(v)}>{l}</button>
         ))}
         <button onClick={() => { sessionStorage.removeItem("vasky-admin"); location.reload(); }}>Logout</button>
@@ -272,10 +300,23 @@ export default function Admin() {
         {tab === "orders" && (
           <>
             <h2 style={{ color: "var(--brand)" }}>Orders ({orders.length})</h2>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+              <input value={oSearch} onChange={(e) => setOSearch(e.target.value)} placeholder="Search number, name, phone…" aria-label="Search orders" style={{ flex: 1, minWidth: 180, border: "1px solid var(--line)", borderRadius: 8, padding: 9 }} />
+              <select value={oFilter} onChange={(e) => setOFilter(e.target.value)} aria-label="Filter by status">
+                <option value="all">All statuses</option>
+                {ORDER_STATUSES.map((s) => <option key={s}>{s}</option>)}
+              </select>
+              <button className="btn ghost" onClick={exportCSV}>CSV ↓</button>
+            </div>
             <div className="table-wrap"><table className="table">
               <thead><tr><th>Number</th><th>Customer</th><th>Total</th><th>Status</th><th></th></tr></thead>
               <tbody>
-                {orders.map((o) => (
+                {orders.filter((o) => {
+                  if (oFilter !== "all" && o.status !== oFilter) return false;
+                  const q = oSearch.trim().toLowerCase();
+                  if (!q) return true;
+                  return (o.number + " " + o.customer.name + " " + o.customer.phone).toLowerCase().includes(q);
+                }).map((o) => (
                   <Fragment key={o.number}>
                     <tr key={o.number}>
                       <td><b>{o.number}</b><br /><span className="muted">{new Date(o.createdAt).toLocaleString()}</span></td>
@@ -293,7 +334,8 @@ export default function Admin() {
                         {o.items.map((i) => <p key={i.id + i.size} style={{ margin: "4px 0" }}>{i.name} · EU {i.size} × {i.qty} — {formatPrice(i.total)}</p>)}
                         <p className="muted">{o.customer.address}, {o.customer.city} ({o.customer.area}) · {o.customer.notes}</p>
                         <p className="muted">Pay: {o.paymentName}{o.whishRef ? " · Whish ref " + o.whishRef : ""} · Sub {formatPrice(o.subtotal)}{o.discount > 0 ? ` − ${formatPrice(o.discount)}${o.promo ? " (" + o.promo + ")" : ""}` : ""} + Del {formatPrice(o.delivery)}</p>
-                        <a className="btn ghost" target="_blank" rel="noreferrer" href={waCust(o.customer.phone, `Hi ${o.customer.name}! This is Vasky about order ${o.number} (${o.status}).`)}>WHATSAPP CUSTOMER</a>
+                        <a className="btn ghost" target="_blank" rel="noreferrer" href={waCust(o.customer.phone, `Hi ${o.customer.name}! This is Vasky about order ${o.number} (${o.status}).`)}>WHATSAPP CUSTOMER</a>{" "}
+                        <button className="btn ghost" onClick={() => printInvoice(o)}>🖨 INVOICE</button>
                       </td></tr>
                     )}
                   </Fragment>
@@ -360,6 +402,49 @@ export default function Admin() {
               <label className="btn ghost" style={{ gridColumn: "1 / -1", textAlign: "center" }}>{npImg ? "📷 Photo ready ✓ (tap to change)" : "📷 Add photo"}<input type="file" accept="image/*" hidden onChange={async (e) => { if (e.target.files[0]) { try { setNpImg(await fileToPhoto(e.target.files[0])); } catch { setMsg("Couldn't read that photo."); } } e.target.value = ""; }} /></label>
               <button className="btn" style={{ gridColumn: "1 / -1" }}>ADD PRODUCT</button>
             </form>
+          </>
+        )}
+        {tab === "reports" && (
+          <>
+            <h2 style={{ color: "var(--brand)" }}>Sales reports</h2>
+            {(() => {
+              const days = [];
+              for (let i = 13; i >= 0; i--) {
+                const d = new Date(); d.setDate(d.getDate() - i);
+                const key = d.toISOString().slice(0, 10);
+                days.push({ key, label: d.toLocaleDateString(undefined, { day: "numeric", month: "numeric" }), total: 0, n: 0 });
+              }
+              const byDay = Object.fromEntries(days.map((d) => [d.key, d]));
+              live.forEach((o) => { const k = String(o.createdAt || "").slice(0, 10); if (byDay[k]) { byDay[k].total += o.total; byDay[k].n++; } });
+              const max = Math.max(1, ...days.map((d) => d.total));
+              const items = {};
+              live.forEach((o) => o.items.forEach((i) => { items[i.name] = items[i.name] || { qty: 0, rev: 0 }; items[i.name].qty += i.qty; items[i.name].rev += i.total; }));
+              const top = Object.entries(items).sort((a, b) => b[1].qty - a[1].qty).slice(0, 8);
+              const avg = live.length ? revenue / live.length : 0;
+              return (<>
+                <div className="stat-cards">
+                  <div className="stat"><b>{formatPrice(revenue)}</b><span>Revenue (14d window above)</span></div>
+                  <div className="stat"><b>{live.length}</b><span>Paid-track orders</span></div>
+                  <div className="stat"><b>{formatPrice(avg)}</b><span>Average order</span></div>
+                  <div className="stat"><b>{pending}</b><span>Awaiting action</span></div>
+                </div>
+                <h3 style={{ color: "var(--brand)" }}>Revenue — last 14 days</h3>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 150, border: "1px solid var(--line)", borderRadius: 12, padding: 12, background: "#fff" }}>
+                  {days.map((d) => (
+                    <div key={d.key} title={`${d.label}: $${d.total.toFixed(2)} (${d.n})`} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center", height: "100%" }}>
+                      <div style={{ width: "100%", maxWidth: 34, height: Math.max(3, (d.total / max) * 100) + "%", background: "var(--brand)", borderRadius: "4px 4px 0 0" }} />
+                      <small className="muted" style={{ fontSize: 9 }}>{d.label}</small>
+                    </div>
+                  ))}
+                </div>
+                <h3 style={{ color: "var(--brand)", marginTop: 18 }}>Best sellers</h3>
+                {top.length === 0 && <p className="muted">No sales yet.</p>}
+                <div className="table-wrap"><table className="table">
+                  <thead><tr><th>Product</th><th>Pairs</th><th>Revenue</th></tr></thead>
+                  <tbody>{top.map(([n, v]) => <tr key={n}><td>{n}</td><td>{v.qty}</td><td><b>{formatPrice(v.rev)}</b></td></tr>)}</tbody>
+                </table></div>
+              </>);
+            })()}
           </>
         )}
         {tab === "delivery" && delivery && (
