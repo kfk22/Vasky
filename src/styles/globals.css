@@ -220,6 +220,13 @@ button { font-family: inherit; cursor: pointer; }
 .table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; }
 .table th, .table td { border-bottom: 1px solid var(--line); padding: 10px; text-align: left; vertical-align: top; }
 .table th { color: var(--brand); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+.table-wrap { overflow-x: auto; }
+.sizecheck { display: flex; flex-wrap: wrap; gap: 4px; max-width: 230px; }
+.sizecheck label { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; border: 1px solid var(--line); border-radius: 6px; padding: 3px 7px; cursor: pointer; color: var(--muted); }
+.sizecheck label.on { border-color: var(--brand); color: var(--brand); background: #fafaff; font-weight: 800; }
+.stockgrid { display: flex; flex-wrap: wrap; gap: 6px; max-width: 270px; }
+.stockgrid label { display: flex; flex-direction: column; font-size: 10px; font-weight: 800; color: var(--muted); }
+.stockgrid input { width: 58px; border: 1px solid var(--line); border-radius: 6px; padding: 6px; font-size: 13px; }
 .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; background: var(--soft); color: var(--brand); }
 .inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
 .inputs input, .inputs select { border: 1px solid var(--line); border-radius: 8px; padding: 9px; font-size: 13px; width: 100%; }

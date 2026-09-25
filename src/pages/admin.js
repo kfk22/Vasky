@@ -121,21 +121,37 @@ export default function Admin() {
     load();
   }
 
+  const ALL_SIZES = ["28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46"];
+  function sizeOpts(p) {
+    const cat = edit[p.id]?.category ?? p.category;
+    return cat === "kids" ? ALL_SIZES.slice(0, 8) : ALL_SIZES.slice(8);
+  }
+  function curSizes(p) { return edit[p.id]?.sizes ?? p.sizes ?? []; }
+  function curStock(p) { return edit[p.id]?.stockObj ?? p.stock ?? {}; }
+  function toggleSize(p, s) {
+    const sizes = curSizes(p);
+    const stock = { ...curStock(p) };
+    let next;
+    if (sizes.includes(s)) { next = sizes.filter((x) => x !== s); delete stock[s]; }
+    else { next = [...sizes, s].sort((a, b) => Number(a) - Number(b)); if (stock[s] == null) stock[s] = 5; }
+    setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], sizes: next, stockObj: stock } }));
+  }
+  function setQty(p, s, q) {
+    const stock = { ...curStock(p), [s]: Math.max(0, Number(q) || 0) };
+    setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], stockObj: stock } }));
+  }
+
   async function saveProduct(id) {
+    const p = products.find((x) => x.id === id);
     const patch = {};
     if (edit[id]?.name !== undefined && edit[id].name !== "") patch.name = edit[id].name;
     if (edit[id]?.brand !== undefined && edit[id].brand !== "") patch.brand = edit[id].brand;
     if (edit[id]?.category) patch.category = edit[id].category;
     if (edit[id]?.price !== undefined && edit[id].price !== "") patch.price = Number(edit[id].price);
+    if (edit[id]?.sizes) patch.sizes = edit[id].sizes;
+    if (edit[id]?.stockObj) patch.stock = edit[id].stockObj;
     if (edit[id]?.oldPrice !== undefined) patch.oldPrice = edit[id].oldPrice === "" ? null : Number(edit[id].oldPrice);
-    if (edit[id]?.stock !== undefined && edit[id].stock !== "") {
-      const pairs = String(edit[id].stock).split(",").map((s) => s.trim()).filter(Boolean);
-      const stock = {};
-      pairs.forEach((pr) => { const [s, q] = pr.split(":"); if (s) stock[s.trim()] = Math.max(0, Number(q) || 0); });
-      patch.stock = stock;
-    }
     if (edit[id]?.discount !== undefined && edit[id].discount !== "") {
-      const p = products.find((x) => x.id === id);
       const d = Math.min(90, Math.max(0, Number(edit[id].discount) || 0));
       patch.oldPrice = d === 0 ? null : Math.round(p.price / (1 - d / 100));
     }
@@ -295,7 +311,7 @@ export default function Admin() {
               </p>
             )}
             <div className="table-wrap"><table className="table">
-              <thead><tr><th>Product</th><th>Brand / Cat</th><th>Price</th><th>Discount %</th><th>Stock (size:qty,…)</th><th></th></tr></thead>
+              <thead><tr><th>Product</th><th>Brand / Cat</th><th>Price</th><th>Discount %</th><th>Sizes (tick)</th><th>Stock (type qty)</th><th></th></tr></thead>
               <tbody>
                 {products.map((p) => (
                   <tr key={p.id}>
@@ -308,7 +324,22 @@ export default function Admin() {
                     </td>
                     <td><input value={edit[p.id]?.price ?? p.price} onChange={(e) => setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], price: e.target.value } }))} style={{ width: 70 }} /></td>
                     <td><input placeholder={p.oldPrice ? String(Math.round((1 - p.price / p.oldPrice) * 100)) : "0"} value={edit[p.id]?.discount ?? ""} onChange={(e) => setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], discount: e.target.value } }))} style={{ width: 60 }} /></td>
-                    <td><input value={edit[p.id]?.stock ?? Object.entries(p.stock || {}).map(([s, q]) => s + ":" + q).join(", ")} onChange={(e) => setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], stock: e.target.value } }))} style={{ width: 200 }} /></td>
+                    <td>
+                      <div className="sizecheck">
+                        {sizeOpts(p).map((s) => (
+                          <label key={s} className={curSizes(p).includes(s) ? "on" : ""}>
+                            <input type="checkbox" checked={curSizes(p).includes(s)} onChange={() => toggleSize(p, s)} />{s}
+                          </label>
+                        ))}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="stockgrid">
+                        {curSizes(p).map((s) => (
+                          <label key={s}>EU{s}<input type="number" min="0" value={curStock(p)[s] ?? 0} onChange={(e) => setQty(p, s, e.target.value)} /></label>
+                        ))}
+                      </div>
+                    </td>
                     <td style={{ whiteSpace: "nowrap" }}><button className="btn" onClick={() => saveProduct(p.id)}>SAVE</button> <button className="btn ghost" onClick={() => delProduct(p.id, p.name)}>✕</button><br />
                       <label className="btn ghost" style={{ marginTop: 4, display: "inline-block" }}>{p.img && !p.img.startsWith("https://images.unsplash.com") ? "📷✓" : "📷"}<input type="file" accept="image/*" hidden onChange={(e) => { if (e.target.files[0]) uploadImg(p.id, e.target.files[0]); e.target.value = ""; }} /></label>
                     </td>
