@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useStore } from "../lib/store";
+import { useCatalog, findIn } from "../lib/catalog";
 import { formatPrice } from "../lib/format";
-import { getProduct } from "../data/products";
 
 export default function Account() {
   const { user, setUser, favorites, myOrders, showToast } = useStore();
@@ -31,7 +31,8 @@ export default function Account() {
     } catch (err) { setTrackErr(err.message); }
   }
 
-  const saved = favorites.map(getProduct).filter(Boolean);
+  const catalog = useCatalog();
+  const saved = favorites.map((id) => findIn(catalog, id)).filter(Boolean);
 
   return (
     <div className="wrap" style={{ padding: "34px 20px 60px", maxWidth: 900 }}>

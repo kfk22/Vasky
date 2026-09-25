@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import ProductCard from "../components/ProductCard";
-import { products, brands, allSizes, allColors } from "../data/products";
+import { allSizes, allColors } from "../data/products";
+import { useCatalog } from "../lib/catalog";
 
 function useQueryState(router) {
   const q = router.query;
@@ -40,8 +41,10 @@ export function filterSort(list, f) {
   return out;
 }
 
-export default function Shop() {
+export default function Shop({ initialProducts }) {
   const router = useRouter();
+  const products = useCatalog(initialProducts);
+  const brands = useMemo(() => [...new Set(products.map((p) => p.brand))].sort(), [products]);
   const init = useQueryState(router);
   const [brand, setBrand] = useState("all");
   const [color, setColor] = useState("all");
@@ -55,7 +58,7 @@ export default function Shop() {
   const f = {
     cat: init.cat, tag: init.tag, brand, color, size, avail, min: Number(min) || 0, max: Number(max) || 9999, sort, search,
   };
-  const visible = useMemo(() => filterSort(products, f), [init.cat, init.tag, brand, color, size, avail, min, max, sort, search]);
+  const visible = useMemo(() => filterSort(products, f), [products, init.cat, init.tag, brand, color, size, avail, min, max, sort, search]);
 
   function reset() { setBrand("all"); setColor("all"); setSize("all"); setAvail("all"); setMin(0); setMax(150); setSort("featured"); setSearch(""); }
 
@@ -115,4 +118,9 @@ export default function Shop() {
       </section>
     </div>
   );
+}
+
+export async function getServerSideProps() {
+  const { catalog } = await import("../lib/server-products");
+  return { props: { initialProducts: await catalog() } };
 }

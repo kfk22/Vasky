@@ -2,7 +2,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useStore } from "../lib/store";
 import { formatPrice } from "../lib/format";
-import { getProduct } from "../data/products";
+import { useCatalog, findIn } from "../lib/catalog";
 import ProductImage from "../components/ProductImage";
 
 export default function Cart() {
@@ -11,7 +11,8 @@ export default function Cart() {
   useEffect(() => {
     fetch("/api/delivery").then((r) => r.json()).then((d) => { if (d?.freeOver != null) setFreeOver(d.freeOver); }).catch(() => {});
   }, []);
-  const lines = cart.map((i) => ({ ...i, product: getProduct(i.id) })).filter((l) => l.product);
+  const catalog = useCatalog();
+  const lines = cart.map((i) => ({ ...i, product: findIn(catalog, i.id) })).filter((l) => l.product);
   const subtotal = lines.reduce((s, l) => s + l.product.price * l.qty, 0);
   const pct = Math.min(100, Math.round((subtotal / freeOver) * 100));
 

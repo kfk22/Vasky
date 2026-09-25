@@ -2,11 +2,12 @@ import { useState } from "react";
 import Link from "next/link";
 import ProductCard from "../components/ProductCard";
 import { useStore } from "../lib/store";
-import { getProduct } from "../data/products";
+import { useCatalog, findIn } from "../lib/catalog";
 
 export default function Favorites() {
   const { favorites } = useStore();
-  const items = favorites.map(getProduct).filter(Boolean);
+  const catalog = useCatalog();
+  const items = favorites.map((id) => findIn(catalog, id)).filter(Boolean);
   if (!items.length) {
     return (
       <div className="wrap" style={{ padding: "60px 20px", textAlign: "center" }}>

@@ -1,14 +1,40 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import ProductImage from "../../components/ProductImage";
 import ProductCard from "../../components/ProductCard";
 import { useStore } from "../../lib/store";
 import { formatPrice } from "../../lib/format";
 import { products, getProduct, discountPct } from "../../data/products";
+import { useCatalog, useLiveFlag, findIn } from "../../lib/catalog";
 
 const SIZE_GUIDE = [["EU", "US", "Foot (cm)"], ["36", "6", "22.5"], ["37", "6.5", "23"], ["38", "7.5", "24"], ["39", "8", "24.5"], ["40", "9", "25.5"], ["41", "10", "26"], ["42", "10.5", "26.5"], ["43", "11.5", "27.5"], ["44", "12", "28"], ["45", "13", "28.5"], ["46", "14", "29"]];
 
-export default function ProductPage({ product, related }) {
+export default function ProductPage({ ssrProduct, ssrRelated, ssrId }) {
+  const router = useRouter();
+  const id = (typeof router.query.id === "string" && router.query.id) || ssrId || "";
+  const catalog = useCatalog(ssrProduct ? [ssrProduct, ...ssrRelated] : []);
+  const live = useLiveFlag();
+  const product = live ? findIn(catalog, id) : (id ? ssrProduct : null);
+  if (!product) {
+    if (!id) {
+      return <div className="wrap" style={{ padding: "40px 20px" }}><div className="skel" style={{ height: 320 }} /><p className="muted">Loading…</p></div>;
+    }
+    return (
+      <div className="wrap" style={{ padding: "60px 20px", textAlign: "center" }}>
+        <h1 className="title">Gone.</h1>
+        <p className="muted">This product is no longer available.</p>
+        <Link href="/shop" className="btn" style={{ display: "inline-block", marginTop: 16 }}>SHOP ALL</Link>
+      </div>
+    );
+  }
+  const related = live
+    ? catalog.filter((p) => p.id !== product.id && (p.category === product.category || p.brand === product.brand)).slice(0, 4)
+    : (ssrRelated || []);
+  return <Detail key={product.id} product={product} related={related} />;
+}
+
+function Detail({ product, related }) {
   const { addToCart, toggleFavorite, isFav, showToast } = useStore();
   const [size, setSize] = useState(product.sizes.includes("42") ? "42" : product.sizes[0]);
   const [color, setColor] = useState(product.colors[0]?.name || "");
@@ -141,11 +167,14 @@ export default function ProductPage({ product, related }) {
 }
 
 export async function getStaticPaths() {
-  return { paths: products.map((p) => ({ params: { id: p.slug } })), fallback: false };
+  return { paths: [], fallback: "blocking" };
 }
 
 export async function getStaticProps({ params }) {
-  const product = getProduct(params.id);
-  const related = products.filter((p) => p.id !== product.id && (p.category === product.category || p.brand === product.brand)).slice(0, 4);
-  return { props: { product, related } };
+  const { findProduct, catalog } = await import("../../lib/server-products");
+  const product = await findProduct(params.id);
+  if (!product) return { props: { ssrProduct: null, ssrRelated: [], ssrId: params.id }, revalidate: 60 };
+  const all = await catalog();
+  const related = all.filter((p) => p.id !== product.id && (p.category === product.category || p.brand === product.brand)).slice(0, 4);
+  return { props: { ssrProduct: product, ssrRelated: related, ssrId: params.id }, revalidate: 60 };
 }

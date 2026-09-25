@@ -1,10 +1,15 @@
 import Link from "next/link";
+import { useRouter } from "next/router";
 import ProductCard from "../../components/ProductCard";
-import { products } from "../../data/products";
+import { useCatalog } from "../../lib/catalog";
 
 const TITLES = { men: "Men", women: "Women", kids: "Kids" };
 
-export default function Category({ slug, items }) {
+export default function Category({ slug, initialProducts }) {
+  const router = useRouter();
+  const qslug = typeof router.query.slug === "string" ? router.query.slug : slug;
+  const products = useCatalog(initialProducts);
+  const items = products.filter((p) => p.category === qslug);
   return (
     <div className="wrap" style={{ padding: "34px 20px 60px" }}>
       <p className="kicker">{TITLES[slug] || slug} · VASKY</p>
@@ -19,10 +24,7 @@ export default function Category({ slug, items }) {
   );
 }
 
-export async function getStaticPaths() {
-  return { paths: [{ params: { slug: "men" } }, { params: { slug: "women" } }, { params: { slug: "kids" } }], fallback: false };
-}
-
-export async function getStaticProps({ params }) {
-  return { props: { slug: params.slug, items: products.filter((p) => p.category === params.slug) } };
+export async function getServerSideProps({ params }) {
+  const { catalog } = await import("../../lib/server-products");
+  return { props: { slug: params.slug, initialProducts: await catalog() } };
 }

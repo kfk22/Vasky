@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import ProductCard from "../components/ProductCard";
-import { products } from "../data/products";
+import { useCatalog } from "../lib/catalog";
 
 export default function SearchPage() {
+  const products = useCatalog();
   const [q, setQ] = useState("");
   const results = useMemo(() => {
     const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
@@ -12,13 +13,13 @@ export default function SearchPage() {
       const hay = (p.name + " " + p.brand + " " + p.category + " " + (p.keywords || "")).toLowerCase();
       return terms.every((t) => hay.includes(t));
     }).slice(0, 12);
-  }, [q]);
+  }, [q, products]);
 
   const sugg = useMemo(() => {
     if (q.trim().length < 2) return [];
     const low = q.toLowerCase();
     return products.filter((p) => p.name.toLowerCase().includes(low)).slice(0, 5);
-  }, [q]);
+  }, [q, products]);
 
   return (
     <div className="wrap" style={{ padding: "34px 20px 60px" }}>

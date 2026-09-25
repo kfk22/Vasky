@@ -4,7 +4,7 @@ import ProductCard from "../components/ProductCard";
 import ProductImage from "../components/ProductImage";
 import Reveal from "../components/Reveal";
 import { formatPrice } from "../lib/format";
-import { products, getProduct } from "../data/products";
+import { useCatalog, findIn } from "../lib/catalog";
 
 function useCountdown() {
   const [left, setLeft] = useState("");
@@ -31,7 +31,12 @@ const CATS = [
   { slug: "kids", name: "Kids", desc: "Comfort for every step" },
 ];
 
-export default function Home({ arrivals, popular, best, sale }) {
+export default function Home({ initialProducts }) {
+  const products = useCatalog(initialProducts);
+  const arrivals = products.filter((p) => (p.tags || []).includes("new")).slice(0, 4);
+  const popular = products.filter((p) => (p.tags || []).includes("popular")).slice(0, 4);
+  const best = [...products].sort((a, b) => (b.reviews || 0) - (a.reviews || 0)).slice(0, 4);
+  const sale = products.filter((p) => p.oldPrice).slice(0, 4);
   const [email, setEmail] = useState("");
   const [news, setNews] = useState("");
   const countdown = useCountdown();
@@ -39,9 +44,9 @@ export default function Home({ arrivals, popular, best, sale }) {
   useEffect(() => {
     try {
       const slugs = JSON.parse(localStorage.getItem("vasky-recent") || "[]");
-      setRecent(slugs.map(getProduct).filter(Boolean).slice(0, 4));
+      setRecent(slugs.map((s) => findIn(products, s)).filter(Boolean).slice(0, 4));
     } catch {}
-  }, []);
+  }, [products]);
 
   function subscribe(e) {
     e.preventDefault();
@@ -207,10 +212,7 @@ export default function Home({ arrivals, popular, best, sale }) {
   );
 }
 
-export async function getStaticProps() {
-  const arrivals = products.filter((p) => (p.tags || []).includes("new")).slice(0, 4);
-  const popular = products.filter((p) => (p.tags || []).includes("popular")).slice(0, 4);
-  const best = [...products].sort((a, b) => (b.reviews || 0) - (a.reviews || 0)).slice(0, 4);
-  const sale = products.filter((p) => p.oldPrice).slice(0, 4);
-  return { props: { arrivals, popular, best, sale } };
+export async function getServerSideProps() {
+  const { catalog } = await import("../lib/server-products");
+  return { props: { initialProducts: await catalog() } };
 }

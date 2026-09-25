@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { useStore } from "../lib/store";
 import { formatPrice } from "../lib/format";
-import { getProduct } from "../data/products";
+import { useCatalog, findIn } from "../lib/catalog";
 import { defaultDelivery, PAYMENT_METHODS } from "../data/delivery";
 
 const WHISH_LOGO = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Logo_Whish_Money_%28Lebanon%29.png/250px-Logo_Whish_Money_%28Lebanon%29.png";
@@ -36,7 +36,8 @@ export default function Checkout() {
     }).catch(() => {});
   }, []);
 
-  const lines = useMemo(() => cart.map((i) => ({ ...i, product: getProduct(i.id) })).filter((l) => l.product), [cart]);
+  const catalog = useCatalog();
+  const lines = useMemo(() => cart.map((i) => ({ ...i, product: findIn(catalog, i.id) })).filter((l) => l.product), [cart, catalog]);
   const subtotal = lines.reduce((s, l) => s + l.product.price * l.qty, 0);
   const code = promo.trim().toUpperCase();
   // Client-side estimate only — server re-validates the code.
