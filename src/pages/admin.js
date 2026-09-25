@@ -15,6 +15,53 @@ export default function Admin() {
   const [newArea, setNewArea] = useState({ id: "", name: "", fee: 5 });
   const [pwCur, setPwCur] = useState("");
   const [pwNext, setPwNext] = useState("");
+  const [promos, setPromos] = useState([]);
+  const [newPromo, setNewPromo] = useState({ code: "", type: "percent", value: 10 });
+  const [reviews, setReviews] = useState([]);
+  const [np, setNp] = useState({ name: "", brand: "Vasky", price: "", category: "men", sizes: "", description: "" });
+
+  function beep() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      const c = new Ctx();
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = "sine"; o.frequency.value = 880;
+      g.gain.value = 0.12; o.connect(g); g.connect(c.destination);
+      o.start(); o.stop(c.currentTime + 0.35);
+      o.onended = () => c.close();
+    } catch {}
+  }
+
+  // Live orders: refresh every 10s while watching the orders tab.
+  useEffect(() => {
+    if (!in_ || tab !== "orders") return;
+    const t = setInterval(async () => {
+      try {
+        const r = await fetch("/api/admin/orders", { headers: headers(token) });
+        const d = await r.json();
+        if (!d.orders) return;
+        setOrders((prev) => {
+          const known = new Set(prev.map((o) => o.number));
+          const fresh = d.orders.filter((o) => !known.has(o.number));
+          if (fresh.length && prev.length) {
+            beep();
+            setMsg("🔔 New order: " + fresh.map((f) => f.number).join(", "));
+          }
+          return d.orders;
+        });
+      } catch {}
+    }, 10000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [in_, tab]);
+
+  // Lazy tabs data.
+  useEffect(() => {
+    if (!in_) return;
+    if (tab === "promos") fetch("/api/admin/promos", { headers: headers(token) }).then((r) => r.json()).then((d) => { if (d.promos) setPromos(d.promos); }).catch(() => {});
+    if (tab === "reviews") fetch("/api/reviews").then((r) => r.json()).then((d) => { if (d.reviews) setReviews(d.reviews); }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [in_, tab]);
 
   async function changePw(e) {
     e.preventDefault();
@@ -68,6 +115,9 @@ export default function Admin() {
 
   async function saveProduct(id) {
     const patch = {};
+    if (edit[id]?.name !== undefined && edit[id].name !== "") patch.name = edit[id].name;
+    if (edit[id]?.brand !== undefined && edit[id].brand !== "") patch.brand = edit[id].brand;
+    if (edit[id]?.category) patch.category = edit[id].category;
     if (edit[id]?.price !== undefined && edit[id].price !== "") patch.price = Number(edit[id].price);
     if (edit[id]?.oldPrice !== undefined) patch.oldPrice = edit[id].oldPrice === "" ? null : Number(edit[id].oldPrice);
     if (edit[id]?.stock !== undefined && edit[id].stock !== "") {
@@ -85,6 +135,36 @@ export default function Admin() {
     setMsg("Saved " + id);
     setEdit((e) => ({ ...e, [id]: {} }));
     load();
+  }
+
+  async function delProduct(id, name) {
+    if (!window.confirm("Delete " + name + "? It disappears from the shop.")) return;
+    await fetch("/api/admin/products?id=" + encodeURIComponent(id), { method: "DELETE", headers: headers(token) });
+    setMsg("Deleted " + name);
+    load();
+  }
+
+  async function addProduct(e) {
+    e.preventDefault();
+    const r = await fetch("/api/admin/products", { method: "POST", headers: headers(token), body: JSON.stringify({ product: { ...np, price: Number(np.price) } }) });
+    const d = await r.json();
+    if (!r.ok) { setMsg(d.error || "Failed"); return; }
+    setNp({ name: "", brand: "Vasky", price: "", category: "men", sizes: "", description: "" });
+    setMsg("Product added!");
+    load();
+  }
+
+  async function savePromos(list) {
+    const r = await fetch("/api/admin/promos", { method: "PUT", headers: headers(token), body: JSON.stringify({ promos: list }) });
+    const d = await r.json();
+    if (!r.ok) { setMsg(d.error || "Failed"); return; }
+    setPromos(d.promos);
+    setMsg("Promos saved");
+  }
+
+  async function delReview(id) {
+    await fetch("/api/reviews?id=" + encodeURIComponent(id), { method: "DELETE", headers: headers(token) });
+    setReviews((r) => r.filter((x) => x.id !== id));
   }
 
   async function saveDelivery() {
@@ -123,7 +203,7 @@ export default function Admin() {
   return (
     <div className="wrap admin-grid" style={{ maxWidth: 1160 }}>
       <nav className="admin-nav">
-        {[["orders", "Orders"], ["products", "Products"], ["delivery", "Delivery"], ["customers", "Customers"], ["password", "Password"]].map(([v, l]) => (
+        {[["orders", "Orders"], ["products", "Products"], ["delivery", "Delivery"], ["customers", "Customers"], ["promos", "Promos"], ["reviews", "Reviews"], ["password", "Password"]].map(([v, l]) => (
           <button key={v} className={tab === v ? "sel" : ""} onClick={() => setTab(v)}>{l}</button>
         ))}
         <button onClick={() => { sessionStorage.removeItem("vasky-admin"); location.reload(); }}>Logout</button>
@@ -178,19 +258,37 @@ export default function Admin() {
               </p>
             )}
             <div className="table-wrap"><table className="table">
-              <thead><tr><th>Product</th><th>Price</th><th>Discount %</th><th>Stock (size:qty,…)</th><th></th></tr></thead>
+              <thead><tr><th>Product</th><th>Brand / Cat</th><th>Price</th><th>Discount %</th><th>Stock (size:qty,…)</th><th></th></tr></thead>
               <tbody>
                 {products.map((p) => (
                   <tr key={p.id}>
-                    <td><b>{p.name}</b><br /><span className="muted">{p.id} · {p.brand} · {p.category}</span></td>
+                    <td><input value={edit[p.id]?.name ?? p.name} onChange={(e) => setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], name: e.target.value } }))} style={{ width: 150 }} /><br /><span className="muted">{p.id}</span></td>
+                    <td>
+                      <input value={edit[p.id]?.brand ?? p.brand} onChange={(e) => setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], brand: e.target.value } }))} style={{ width: 90 }} />
+                      <select value={edit[p.id]?.category ?? p.category} onChange={(e) => setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], category: e.target.value } }))}>
+                        <option value="men">men</option><option value="women">women</option><option value="kids">kids</option>
+                      </select>
+                    </td>
                     <td><input value={edit[p.id]?.price ?? p.price} onChange={(e) => setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], price: e.target.value } }))} style={{ width: 70 }} /></td>
                     <td><input placeholder={p.oldPrice ? String(Math.round((1 - p.price / p.oldPrice) * 100)) : "0"} value={edit[p.id]?.discount ?? ""} onChange={(e) => setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], discount: e.target.value } }))} style={{ width: 60 }} /></td>
-                    <td><input value={edit[p.id]?.stock ?? Object.entries(p.stock || {}).map(([s, q]) => s + ":" + q).join(", ")} onChange={(e) => setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], stock: e.target.value } }))} style={{ width: 220 }} /></td>
-                    <td><button className="btn" onClick={() => saveProduct(p.id)}>SAVE</button></td>
+                    <td><input value={edit[p.id]?.stock ?? Object.entries(p.stock || {}).map(([s, q]) => s + ":" + q).join(", ")} onChange={(e) => setEdit((x) => ({ ...x, [p.id]: { ...x[p.id], stock: e.target.value } }))} style={{ width: 200 }} /></td>
+                    <td style={{ whiteSpace: "nowrap" }}><button className="btn" onClick={() => saveProduct(p.id)}>SAVE</button> <button className="btn ghost" onClick={() => delProduct(p.id, p.name)}>✕</button></td>
                   </tr>
                 ))}
               </tbody>
             </table></div>
+            <h3 style={{ color: "var(--brand)", marginTop: 22 }}>Add product</h3>
+            <form onSubmit={addProduct} className="inputs" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr" }}>
+              <input placeholder="Name *" value={np.name} onChange={(e) => setNp({ ...np, name: e.target.value })} required />
+              <input placeholder="Brand" value={np.brand} onChange={(e) => setNp({ ...np, brand: e.target.value })} />
+              <input type="number" placeholder="Price *" value={np.price} onChange={(e) => setNp({ ...np, price: e.target.value })} required />
+              <select value={np.category} onChange={(e) => setNp({ ...np, category: e.target.value })}>
+                <option value="men">men</option><option value="women">women</option><option value="kids">kids</option>
+              </select>
+              <input placeholder="Sizes: 40, 41, 42" value={np.sizes} onChange={(e) => setNp({ ...np, sizes: e.target.value })} style={{ gridColumn: "1 / -1" }} />
+              <input placeholder="Description" value={np.description} onChange={(e) => setNp({ ...np, description: e.target.value })} style={{ gridColumn: "1 / -1" }} />
+              <button className="btn" style={{ gridColumn: "1 / -1" }}>ADD PRODUCT</button>
+            </form>
           </>
         )}
         {tab === "delivery" && delivery && (
@@ -213,6 +311,49 @@ export default function Admin() {
               <button className="btn" onClick={() => { if (newArea.id && newArea.name) { setDelivery({ ...delivery, areas: [...delivery.areas, newArea] }); setNewArea({ id: "", name: "", fee: 5 }); } }}>ADD</button>
             </div>
             <button className="btn" onClick={saveDelivery}>SAVE DELIVERY</button>
+          </>
+        )}
+        {tab === "promos" && (
+          <>
+            <h2 style={{ color: "var(--brand)" }}>Promo codes</h2>
+            <p className="muted">Customers enter these at checkout. Changes apply instantly.</p>
+            <div className="table-wrap"><table className="table">
+              <thead><tr><th>Code</th><th>Type</th><th>Value</th><th></th></tr></thead>
+              <tbody>
+                {promos.map((p, i) => (
+                  <tr key={p.code}>
+                    <td><b>{p.code}</b></td>
+                    <td>{p.type === "freeship" ? "Free delivery" : p.value + "% off"}</td>
+                    <td>{p.type === "percent" ? p.value + "%" : "—"}</td>
+                    <td><button className="btn ghost" onClick={() => { const l = promos.filter((_, j) => j !== i); setPromos(l); savePromos(l); }}>✕</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table></div>
+            <div className="inputs" style={{ gridTemplateColumns: "1fr 1fr 1fr auto", marginTop: 12 }}>
+              <input placeholder="CODE" value={newPromo.code} onChange={(e) => setNewPromo({ ...newPromo, code: e.target.value.toUpperCase() })} style={{ textTransform: "uppercase" }} />
+              <select value={newPromo.type} onChange={(e) => setNewPromo({ ...newPromo, type: e.target.value })}>
+                <option value="percent">% off</option><option value="freeship">Free delivery</option>
+              </select>
+              <input type="number" placeholder="10" value={newPromo.value} onChange={(e) => setNewPromo({ ...newPromo, value: Number(e.target.value) })} />
+              <button className="btn" onClick={() => { if (!newPromo.code.trim()) return; const l = [...promos, { code: newPromo.code.trim().toUpperCase(), type: newPromo.type, value: newPromo.value, minSubtotal: 0, note: "" }]; setPromos(l); savePromos(l); setNewPromo({ code: "", type: "percent", value: 10 }); }}>ADD</button>
+            </div>
+          </>
+        )}
+        {tab === "reviews" && (
+          <>
+            <h2 style={{ color: "var(--brand)" }}>Reviews ({reviews.length})</h2>
+            {reviews.length === 0 && <p className="muted">No reviews yet.</p>}
+            {reviews.map((r) => (
+              <div key={r.id || (r.productId + r.createdAt)} className="line">
+                <div style={{ flex: 1 }}>
+                  <b>{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)} {r.name}</b>
+                  <p className="muted" style={{ margin: "4px 0" }}>{r.text}</p>
+                  <span className="muted">{r.productId} · {new Date(r.createdAt).toLocaleDateString()}</span>
+                </div>
+                <button className="btn ghost" onClick={() => delReview(r.id)}>✕</button>
+              </div>
+            ))}
           </>
         )}
         {tab === "password" && (

@@ -102,3 +102,14 @@ export function addReview(r) {
   saveJson("reviews.json", all.slice(0, 1000));
   return r;
 }
+
+export function deleteReview(id) {
+  saveJson("reviews.json", getReviews().filter((r) => r.id !== id));
+  return true;
+}
+
+// ---- promos ----
+export function setPromos(list) {
+  saveJson("promos.json", list);
+  return list;
+}

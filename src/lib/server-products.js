@@ -5,12 +5,16 @@ import { defaultDelivery } from "../data/delivery.js";
 
 export async function catalog() {
   const over = (await getOverrides()) || {};
-  return base.map((p) => {
-    const o = over[p.id] || {};
-    const merged = { ...p, ...o };
-    if (o.stock) merged.stock = { ...p.stock, ...o.stock };
-    return merged;
-  });
+  const customs = Object.values(over).filter((v) => v && v.__custom && !v.deleted);
+  const list = base
+    .map((p) => {
+      const o = over[p.id] || {};
+      const merged = { ...p, ...o };
+      if (o.stock) merged.stock = { ...p.stock, ...o.stock };
+      return merged;
+    })
+    .filter((p) => !p.deleted);
+  return [...list, ...customs];
 }
 
 export async function findProduct(idOrSlug) {

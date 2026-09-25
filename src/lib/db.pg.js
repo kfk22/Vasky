@@ -84,3 +84,12 @@ export async function addReview(rv) {
   await db().query("INSERT INTO reviews(data) VALUES($1)", [rv]);
   return rv;
 }
+export async function deleteReview(id) {
+  await init();
+  await db().query("DELETE FROM reviews WHERE data->>'id'=$1", [id]);
+  return true;
+}
+export async function setPromos(list) {
+  await kvSet("promos", list);
+  return list;
+}

@@ -1,4 +1,5 @@
-import { getReviews, addReview } from "../../lib/db";
+import { getReviews, addReview, deleteReview } from "../../lib/db";
+import { verifyAdmin } from "../../lib/admin-auth";
 
 const esc = (s) => String(s || "").trim().slice(0, 500);
 
@@ -15,9 +16,16 @@ export default async function handler(req, res) {
     if (!(r >= 1 && r <= 5)) return res.status(400).json({ error: "Rating 1-5." });
     if (esc(name).length < 2) return res.status(400).json({ error: "Enter your name." });
     if (esc(text).length < 4) return res.status(400).json({ error: "Write a few words." });
-    const review = { productId: String(productId), name: esc(name).slice(0, 60), rating: r, text: esc(text).slice(0, 500), createdAt: new Date().toISOString() };
+    const review = { id: Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36), productId: String(productId), name: esc(name).slice(0, 60), rating: r, text: esc(text).slice(0, 500), createdAt: new Date().toISOString() };
     await addReview(review);
     return res.status(201).json({ review });
+  }
+  if (req.method === "DELETE") {
+    if (!(await verifyAdmin(req))) return res.status(401).json({ error: "Unauthorized." });
+    const id = String(req.query.id || "");
+    if (!id) return res.status(400).json({ error: "Missing id." });
+    await deleteReview(id);
+    return res.status(200).json({ ok: true });
   }
   return res.status(405).json({ error: "Method not allowed" });
 }
