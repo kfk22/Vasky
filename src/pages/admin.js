@@ -46,14 +46,19 @@ export default function Admin() {
 
   async function load(t) {
     const tk = t || token;
-    const [o, p, d] = await Promise.all([
-      fetch("/api/admin/orders", { headers: headers(tk) }).then((r) => r.json()),
-      fetch("/api/admin/products", { headers: headers(tk) }).then((r) => r.json()),
-      fetch("/api/admin/delivery", { headers: headers(tk) }).then((r) => r.json()),
-    ]);
-    if (o.orders) setOrders(o.orders);
-    if (p.products) setProducts(p.products);
-    if (d.areas) setDelivery(d);
+    try {
+      const [o, p, d] = await Promise.all([
+        fetch("/api/admin/orders", { headers: headers(tk) }).then((r) => r.json()),
+        fetch("/api/admin/products", { headers: headers(tk) }).then((r) => r.json()),
+        fetch("/api/admin/delivery", { headers: headers(tk) }).then((r) => r.json()),
+      ]);
+      if (o.orders) setOrders(o.orders);
+      else setMsg("Orders failed to load: " + (o.error || "unknown error") + " — check you're logged in.");
+      if (p.products) setProducts(p.products);
+      if (d.areas) setDelivery(d);
+    } catch (e) {
+      setMsg("Couldn't reach the server. Check your connection and reload.");
+    }
   }
 
   async function setStatus(number, status) {
