@@ -61,6 +61,7 @@ export default function Cart() {
           <div className="r total"><span>Total</span><span>{formatPrice(subtotal)}</span></div>
           <Link href="/checkout" className="btn" style={{ display: "block", textAlign: "center", marginTop: 14 }}>CHECKOUT →</Link>
           <Link href="/shop" className="btn ghost" style={{ display: "block", textAlign: "center", marginTop: 8 }}>CONTINUE SHOPPING</Link>
+          <p className="muted" style={{ marginTop: 8, textAlign: "center" }}><Link href="/help"><u>Delivery & returns info</u></Link></p>
         </aside>
       </div>
     </div>

@@ -155,6 +155,7 @@ export default function Checkout() {
           <div className="r"><span>Delivery</span><b>{fee === 0 ? "Free" : formatPrice(fee)}</b></div>
           <div className="r total"><span>Total</span><span>{formatPrice(total)}</span></div>
           <button className="btn" style={{ width: "100%", marginTop: 12 }} disabled={placing}>{placing ? "PLACING…" : "PLACE ORDER · " + formatPrice(total)}</button>
+          <p className="muted" style={{ marginTop: 8 }}><Link href="/help"><u>Delivery & returns info</u></Link></p>
         </aside>
       </form>
       <style jsx>{`@media (max-width:1000px){.co-grid{grid-template-columns:1fr !important;}}`}</style>
